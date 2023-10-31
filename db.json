@@ -1,0 +1,25 @@
+{
+  "users": [
+    {
+      "login": "eximple@gmail.com",
+      "pass": "123",
+      "items": [
+        {
+          "id": 1,
+          "text": "Вигуляти кота",
+          "checked": false
+        },
+        {
+          "id": 2,
+          "text": "Вигуляти собаку",
+          "checked": false
+        }
+      ]
+    },
+    {
+      "login": "eximple@i.ua",
+      "pass": "1233",
+      "items": []
+    }
+  ]
+}
