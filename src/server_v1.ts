@@ -4,10 +4,8 @@ import * as path from "path";
 import bodyParser from "body-parser";
 import session from "express-session";
 import FileStore from "session-file-store"
-import { iUser } from "./interfaces.js";
 import { TypePort } from "./types.js";
 import * as routeTasks from "./routeTasks.js"
-
 
 const port: TypePort = 3005
 const filename: string = fileURLToPath(import.meta.url);
@@ -17,7 +15,7 @@ const app: Express = express()
 
 declare module 'express-session' {
     interface SessionData {
-        user: iUser;
+        login: string;
     }
 }
 

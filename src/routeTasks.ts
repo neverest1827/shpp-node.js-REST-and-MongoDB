@@ -2,79 +2,84 @@ import {Request, Response} from "express";
 import {retrieveItems, getId, getIndex} from "./functions.js";
 import {Item} from "./Item.js";
 import {TypeItem} from "./types.js";
-import {iUser} from "./interfaces";
-import {User} from "./User";
-import {createUser, getUser, isUserExist, updateItems} from "./db_control";
+import {User} from "./User.js";
+import * as db from "./db_control.js";
 
 export async function getItems(req: Request, res: Response): Promise<void> {
-    const items: Item[] = await retrieveItems(req);
+    const items: Item[] = await retrieveItems(req, res);
     res.send({"items": items});
 }
 
 export async function setItem(req: Request, res: Response): Promise<void> {
-    const items: Item[] = await retrieveItems(req);
+    const items: Item[] = await retrieveItems(req, res);
     const request: {text: string} = req.body;
     const id: number = getId(items);
-
-    items.push(new Item(id, request.text, false));
+    const userID: string | undefined = req.session.login
+    const newItem: Item = new Item(id, request.text, false)
+    if(userID){
+        await db.addItem(userID, newItem)
+    } else {
+        req.cookies.items.push(newItem)
+    }
     res.send({id: id})
 }
 
 export async function updateItem(req: Request, res: Response): Promise<void> {
-    const items: Item[] = await retrieveItems(req);
+    const items: Item[] = await retrieveItems(req, res);
     const request: TypeItem = req.body;
     const targetId: number = request.id;
+    const userID: string | undefined = req.session.login
     let targetIndex: number | undefined = getIndex(items, targetId)
 
     if (targetIndex || targetIndex === 0) {
-        items[targetIndex].text = request.text;
-        items[targetIndex].checked = request.checked;
+        if(userID){
+            await db.updateItem(userID, targetIndex, request.text, request.checked)
+        } else {
+            req.cookies.items[targetIndex].text = request.text;
+            req.cookies.items[targetIndex].checked = request.checked;
+        }
+
         res.send({"ok": true});
     }
 }
 
 export async function deleteItem(req: Request, res: Response): Promise<void> {
-    const items: TypeItem[] = await retrieveItems(req);
-    const request: {id: number} = req.body;
-    const targetId: number = request.id
+    const items: Item[] = await retrieveItems(req, res);
+    const request: TypeItem = req.body;
+    const targetId: number = request.id;
+    const userID: string | undefined = req.session.login
     const startIndex: number | undefined = getIndex(items, targetId)
 
     if (startIndex || startIndex === 0) {
-        items.splice(startIndex, 1)
-        res.send({"ok": true})
+        if(userID){
+            await db.deleteItem(userID, startIndex)
+        } else {
+            req.cookies.items.splice(startIndex, 1)
+        }
+        res.send({"ok": true});
     }
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
     const {login, pass} = req.body;
-    const user: iUser | undefined = req.session.user
+    const userID: string | undefined = req.session.login
 
-    if(user){
+    if(userID || req.cookies?.items){
         res.send({ "ok": true });
     } else {
-        const user: User = await getUser(login);
-        if (user.login === login && user.pass === pass){
-            req.session.user = user;
+        const user: User | undefined = await db.getUser(login);
+        if (user?.login === login && user?.pass === pass){
+            req.session.login = login;
             res.send({ "ok": true });
         } else {
             res.status(400).send({"error": "not found"})
         }
     }
 
-    console.log(`route - /api/v1/login; login ${req.session.user?.login}; sessionId ${req.session.id}`)
+    console.log(`route - /api/v1/login; login ${req.session.login}; sessionId ${req.session.id}; cookies ${req.cookies?.items}`)
 }
 
 export async function logout(req: Request, res: Response): Promise<void> {
-    const user: iUser | undefined = req.session.user
-
-    if(user && await isUserExist(user.login)){
-        await updateItems(user.login, user.items)
-    } else if (user) {
-        await createUser(user)
-    } else {
-        console.log('Будут кукисы')
-    }
-
     req.session.destroy((err) => {
         if (err) {
             console.error(err);
@@ -87,14 +92,15 @@ export async function logout(req: Request, res: Response): Promise<void> {
 
 export async function register(req: Request, res: Response): Promise<void> {
     const {login, pass} = req.body;
-    const userExist: boolean = await isUserExist(login);
+    const userID: string | undefined = req.session.login
 
-    if(!userExist){
+    if(!userID){
         console.log("Создал сессию")
-        req.session.user = new User(login, pass)
+        db.createUser(new User(login, pass))
+        req.session.login = login
         res.send({ "ok": true })
     } else {
-        res.status(400).send({"error": "user exist use login"})
+        res.status(400).send({"error": "user exist"})
     }
 }
 

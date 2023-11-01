@@ -210,6 +210,8 @@ let vue = new Vue({
                     .then((response) => {
                         if (response.ok) {
                             this.logIn();
+                        } else if (response.error === 'user exist') {
+                            alert('Пользователь с таким логином существует');
                         } else {
                             alert("Произошла ошибка. Посмотрите консоль разработчика чтоб увидеть подробности.")
                         }

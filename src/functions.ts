@@ -1,7 +1,7 @@
 import {TypeItem} from "./types.js";
-import {Request} from "express";
-import {defaultItems} from "./constants.js";
-import {Item} from "./Item";
+import {Request, Response} from "express";
+import {Item} from "./Item.js";
+import * as db from "./db_control.js"
 
 export function getIndex(items: Item[], targetId: number): number | undefined{
     for (let index: number = 0; index < items.length; index++) {
@@ -13,8 +13,22 @@ export function getIndex(items: Item[], targetId: number): number | undefined{
     return undefined;
 }
 
-export async function retrieveItems(req: Request): Promise<TypeItem[]>{
-    return req.session.user?.items || req.cookies?.items || defaultItems
+export async function retrieveItems(req: Request, res: Response): Promise<TypeItem[]>{
+    let items: Item[];
+    const userID: string | undefined = req.session.login
+    if (userID) {
+        items = await db.getItems(userID);
+    } else {
+        if (!req.cookies?.items) {
+            res.cookie("items", [])
+            console.log('Кукас установлен')
+            items = []
+        } else {
+            items = req.cookies.items
+        }
+    }
+
+    return items
 }
 
 export function getId(items: TypeItem[]): number{
