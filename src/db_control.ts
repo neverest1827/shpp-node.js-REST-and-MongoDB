@@ -1,8 +1,7 @@
 import {TypeItem} from "./types.js";
 import * as fs from 'fs/promises'
 import {User} from "./User.js";
-
-const path: string = './db.json'
+import {path} from "./constants.js";
 
 export async function isUserExist(login: string): Promise<boolean> {
     const data: string = await fs.readFile(path, 'utf-8')
@@ -20,7 +19,7 @@ export async function getUser(login: string): Promise<User> {
     })
 }
 
-export function getItems(userId: number): TypeItem[]{
+export function getItemsFromFile(userId: number): TypeItem[]{
     return []
 }
 
