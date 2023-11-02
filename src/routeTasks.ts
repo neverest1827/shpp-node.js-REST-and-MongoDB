@@ -10,7 +10,7 @@ export async function getItems(req: Request, res: Response): Promise<void> {
     res.send({"items": items});
 }
 
-export async function setItem(req: Request, res: Response): Promise<void> {
+export async function addItem(req: Request, res: Response): Promise<void> {
     const items: Item[] = await retrieveItems(req, res);
     const request: {text: string} = req.body;
     const id: number = getId(items);
@@ -20,6 +20,7 @@ export async function setItem(req: Request, res: Response): Promise<void> {
         await db.addItem(userID, newItem)
     } else {
         req.cookies.items.push(newItem)
+        res.cookie("items", req.cookies.items)
     }
     res.send({id: id})
 }
@@ -37,6 +38,7 @@ export async function updateItem(req: Request, res: Response): Promise<void> {
         } else {
             req.cookies.items[targetIndex].text = request.text;
             req.cookies.items[targetIndex].checked = request.checked;
+            res.cookie("items", req.cookies.items)
         }
 
         res.send({"ok": true});
@@ -55,6 +57,7 @@ export async function deleteItem(req: Request, res: Response): Promise<void> {
             await db.deleteItem(userID, startIndex)
         } else {
             req.cookies.items.splice(startIndex, 1)
+            res.cookie("items", req.cookies.items)
         }
         res.send({"ok": true});
     }
@@ -85,6 +88,7 @@ export async function logout(req: Request, res: Response): Promise<void> {
             console.error(err);
             res.status(500).send({ "error": "Server Error" });
         } else {
+            // res.clearCookie('connect.sid')
             res.send({ "ok": true });
         }
     })

@@ -5,7 +5,8 @@ import bodyParser from "body-parser";
 import session from "express-session";
 import FileStore from "session-file-store"
 import { TypePort } from "./types.js";
-import * as routeTasks from "./routeTasks.js"
+import * as routeTasks from "./routeTasks.js";
+import cookieParser from "cookie-parser";
 
 const port: TypePort = 3005
 const filename: string = fileURLToPath(import.meta.url);
@@ -19,6 +20,7 @@ declare module 'express-session' {
     }
 }
 
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(express.static(path.join(dirname, '../public')));
 app.use(session({
@@ -37,7 +39,7 @@ app.get('/', (req: Request, res: Response) => {
 
 app.get('/api/v1/items', routeTasks.getItems)
 
-app.post('/api/v1/items', routeTasks.setItem)
+app.post('/api/v1/items', routeTasks.addItem)
 
 app.put('/api/v1/items', routeTasks.updateItem)
 

@@ -21,7 +21,6 @@ export async function retrieveItems(req: Request, res: Response): Promise<TypeIt
     } else {
         if (!req.cookies?.items) {
             res.cookie("items", [])
-            console.log('Кукас установлен')
             items = []
         } else {
             items = req.cookies.items
