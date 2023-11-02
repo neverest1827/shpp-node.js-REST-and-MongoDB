@@ -66,11 +66,11 @@ export async function deleteItem(req: Request, res: Response): Promise<void> {
 export async function login(req: Request, res: Response): Promise<void> {
     const {login, pass} = req.body;
     const userID: string | undefined = req.session.login
+    const user: User | undefined = await db.getUser(login);
 
-    if(userID || req.cookies?.items){
+    if(userID || req.cookies?.items && !user){
         res.send({ "ok": true });
     } else {
-        const user: User | undefined = await db.getUser(login);
         if (user?.login === login && user?.pass === pass){
             req.session.login = login;
             res.send({ "ok": true });
@@ -88,7 +88,7 @@ export async function logout(req: Request, res: Response): Promise<void> {
             console.error(err);
             res.status(500).send({ "error": "Server Error" });
         } else {
-            // res.clearCookie('connect.sid')
+            // delete req.cookies.items
             res.send({ "ok": true });
         }
     })
@@ -99,8 +99,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     const userID: string | undefined = req.session.login
 
     if(!userID){
-        console.log("Создал сессию")
-        db.createUser(new User(login, pass))
+        await db.createUser(new User(login, pass))
         req.session.login = login
         res.send({ "ok": true })
     } else {
