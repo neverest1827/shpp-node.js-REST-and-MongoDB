@@ -108,4 +108,3 @@ export async function register(req: Request, res: Response): Promise<void> {
         res.status(409).send({"error": "user exist"})
     }
 }
-

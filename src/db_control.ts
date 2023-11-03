@@ -4,6 +4,16 @@ import {User} from "./User.js";
 import {path} from "./constants.js";
 import {Item} from "./Item.js";
 
+async function writeFileWithLock(path: string, data: string): Promise<void> {
+    const fileHandle = await fs.open(path, 'wx+');
+    try {
+        await fileHandle.write(data);
+    } finally {
+        await fileHandle.close();
+    }
+}
+
+
 export async function getUser(login: string): Promise<User | undefined> {
     const data: string = await fs.readFile(path, 'utf-8')
     const db: { users: User[] } = JSON.parse(data)
@@ -28,7 +38,7 @@ export async function addItem(login: string, item: Item): Promise<void> {
 
     if (user) {
         user.items.push(item)
-        await fs.writeFile(path, JSON.stringify(db, null, 2))
+        await writeFileWithLock(path, JSON.stringify(db, null, 2));
     } else {
         throw new Error("Can't find user in file")
     }
@@ -43,7 +53,7 @@ export async function editItem(login:string, index: number, text: string, checke
     if (user) {
         user.items[index].text = text;
         user.items[index].checked = checked;
-        await fs.writeFile(path, JSON.stringify(db, null, 2))
+        await writeFileWithLock(path, JSON.stringify(db, null, 2));
     } else {
         throw new Error("Can't find user in file")
     }
@@ -57,7 +67,7 @@ export async function deleteItem(login: string, index: number): Promise<void> {
 
     if (user) {
         user.items.splice(index, 1);
-        await fs.writeFile(path, JSON.stringify(db, null, 2))
+        await writeFileWithLock(path, JSON.stringify(db, null, 2));
     } else {
         throw new Error("Can't find user in file")
     }
@@ -67,5 +77,5 @@ export async function createUser(user: User): Promise<void> {
     const data: string = await fs.readFile(path, 'utf-8')
     const db: { users: User[] } = JSON.parse(data)
     db.users.push(user)
-    await fs.writeFile(path, JSON.stringify(db, null, 2))
+    await writeFileWithLock(path, JSON.stringify(db, null, 2));
 }
