@@ -39,9 +39,9 @@ app.get('/', (req: Request, res: Response) => {
 
 app.get('/api/v1/items', routeTasks.getItems)
 
-app.post('/api/v1/items', routeTasks.addItem)
+app.post('/api/v1/items', routeTasks.createItem)
 
-app.put('/api/v1/items', routeTasks.updateItem)
+app.put('/api/v1/items', routeTasks.editItem)
 
 app.delete('/api/v1/items', routeTasks.deleteItem)
 

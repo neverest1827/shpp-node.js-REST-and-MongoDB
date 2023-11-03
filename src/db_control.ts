@@ -34,7 +34,7 @@ export async function addItem(login: string, item: Item): Promise<void> {
     }
 }
 
-export async function updateItem(login:string, index: number, text: string, checked: boolean): Promise<void> {
+export async function editItem(login:string, index: number, text: string, checked: boolean): Promise<void> {
     const data: string = await fs.readFile(path, 'utf-8')
     const db: { users: User[] } = JSON.parse(data)
     const users: User[] = db.users
