@@ -8,7 +8,7 @@
   "main": "public/functions.js",
   "scripts": {
     "build": "rd /s /q dist && tsc",
-    "start": "node dist/server_v2.js",
+    "start": "node dist/server_v1.js",
     "bs": "npm run build && npm run start"
   },
   "author": "Vitalii Fetisov",
