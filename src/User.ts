@@ -1,7 +1,10 @@
-import { iUser } from "./interfaces.js";
+import { IUser } from "./interfaces.js";
 import { TypeItem } from "./types.js";
 
-export class User implements iUser {
+/**
+ * Represents a user in the app
+ */
+export class User implements IUser {
     login: string;
     pass: string;
     items: TypeItem[]

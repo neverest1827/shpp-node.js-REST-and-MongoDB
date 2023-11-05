@@ -1,5 +1,8 @@
 import {TypeItem} from "./types.js";
 
+/**
+ * Represents an item in the app
+ */
 export class Item implements TypeItem {
     id: number;
     text: string;

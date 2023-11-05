@@ -5,13 +5,25 @@ import {TypeItem} from "./types.js";
 import {User} from "./User.js";
 import * as file from "./file_control.js";
 import * as db from "./db_control.js"
-import {use_db} from "./constants.js";
+import {use_db} from "./config.js";
 
+/**
+ * Processes an HTTP request for custom elements and sends them as a JSON response.
+ *
+ * @param req Express Request object containing information about the incoming HTTP request.
+ * @param res Express Response object used to send the HTTP response back to the client.
+ */
 export async function getItems(req: Request, res: Response): Promise<void> {
     const items: Item[] = await retrieveItems(req, res);
     res.send({"items": items});
 }
 
+/**
+ * Processes an HTTP request to create an element for a user and sends a response as a JSON response.
+ *
+ * @param req Express Request object containing information about the incoming HTTP request.
+ * @param res Express Response object used to send the HTTP response back to the client.
+ */
 export async function createItem(req: Request, res: Response): Promise<void> {
     const items: Item[] = await retrieveItems(req, res);
     const request: {text: string} = req.body;
@@ -31,6 +43,13 @@ export async function createItem(req: Request, res: Response): Promise<void> {
     res.status(200).send({id: id})
 }
 
+/**
+ * Processes HTTP requests to change information in the selected user element and sends a response in the form of
+ * a JSON response.
+ *
+ * @param req Express Request object containing information about the incoming HTTP request.
+ * @param res Express Response object used to send the HTTP response back to the client.
+ */
 export async function editItem(req: Request, res: Response): Promise<void> {
     const items: Item[] = await retrieveItems(req, res);
     const request: TypeItem = req.body;
@@ -56,6 +75,12 @@ export async function editItem(req: Request, res: Response): Promise<void> {
     }
 }
 
+/**
+ * Processes an HTTP request to delete an item for the user and sends a response as a JSON response.
+ *
+ * @param req Express Request object containing information about the incoming HTTP request.
+ * @param res Express Response object used to send the HTTP response back to the client.
+ */
 export async function deleteItem(req: Request, res: Response): Promise<void> {
     const items: Item[] = await retrieveItems(req, res);
     const request: TypeItem = req.body;
@@ -80,12 +105,18 @@ export async function deleteItem(req: Request, res: Response): Promise<void> {
     }
 }
 
+/**
+ * Processes an HTTP request for user authorization, creates a session, and sends a JSON response.
+ *
+ * @param req Express Request object containing information about the incoming HTTP request.
+ * @param res Express Response object used to send the HTTP response back to the client.
+ */
 export async function login(req: Request, res: Response): Promise<void> {
     const {login, pass} = req.body;
     const userID: string | undefined = req.session.login
     const user: User | undefined = (use_db) ? await db.getUser(login) : await file.getUser(login);
 
-    if(userID || req.cookies?.items && !user){
+    if(userID){
         res.status(200).send({ "ok": true });
     } else {
         if (user?.login === login && user?.pass === pass){
@@ -95,25 +126,36 @@ export async function login(req: Request, res: Response): Promise<void> {
             res.status(400).send({"error": "not found"})
         }
     }
-
-    console.log(`route - /api/v1/login; login ${req.session.login}; sessionId ${req.session.id}; cookies ${req.cookies?.items}`)
 }
 
+/**
+ * Processes an HTTP request for user logout, deletes the session, and sends a JSON response.
+ *
+ * @param req Express Request object containing information about the incoming HTTP request.
+ * @param res Express Response object used to send the HTTP response back to the client.
+ */
 export async function logout(req: Request, res: Response): Promise<void> {
     req.session.destroy((err): void => {
         if (err) {
             console.error(err);
             res.status(500).send({ "error": "Server Error" });
         } else {
+            res.clearCookie('connect.sid') // Delete cookies with the session key to avoid getting an error
             res.status(200).send({ "ok": true });
         }
     })
 }
 
+/**
+ * Processes an HTTP request for user registration, creates a session, and sends a JSON response.
+ *
+ * @param req Express Request object containing information about the incoming HTTP request.
+ * @param res Express Response object used to send the HTTP response back to the client.
+ */
 export async function register(req: Request, res: Response): Promise<void> {
     const {login, pass} = req.body;
-    const userID: string | undefined = req.session.login
     const user: User | undefined = (use_db) ? await db.getUser(login) : await file.getUser(login);
+
     if(!user){
         if (use_db){
             await db.createUser(new User(login, pass));

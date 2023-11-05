@@ -1,55 +1,26 @@
-import express, {Express, Request, Response} from 'express';
-import { fileURLToPath } from 'url';
+import { Request, Response} from 'express';
 import * as path from "path";
-import bodyParser from "body-parser";
-import session from "express-session";
-import FileStore from "session-file-store"
-import { TypePort } from "./types.js";
-import * as routeTasks from "./routeTasks.js";
-import cookieParser from "cookie-parser";
+import * as tasks from "./routeTasks.js";
+import { port } from "./config.js";
+import { app, dirname } from "./app.js";
 
-const port: TypePort = 3005
-const filename: string = fileURLToPath(import.meta.url);
-const dirname: string = path.dirname(filename);
-const FileStoreSession = FileStore(session)
-const app: Express = express()
-
-declare module 'express-session' {
-    interface SessionData {
-        login: string;
-    }
-}
-
-app.use(cookieParser());
-app.use(bodyParser.json());
-app.use(express.static(path.join(dirname, '../public')));
-app.use(session({
-    store: new FileStoreSession({
-        path: "./sessions"
-    }),
-    secret: 'keyboard cat',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {maxAge: 30 * 60 * 1000} // 30 minute
-}));
-
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (req: Request, res: Response): void => {
     res.sendFile(path.join(dirname, '../public', 'index.html'));
 });
 
-app.get('/api/v1/items', routeTasks.getItems)
+app.get('/api/v1/items', tasks.getItems)
 
-app.post('/api/v1/items', routeTasks.createItem)
+app.post('/api/v1/items', tasks.createItem)
 
-app.put('/api/v1/items', routeTasks.editItem)
+app.put('/api/v1/items', tasks.editItem)
 
-app.delete('/api/v1/items', routeTasks.deleteItem)
+app.delete('/api/v1/items', tasks.deleteItem)
 
-app.post('/api/v1/login',  routeTasks.login);
+app.post('/api/v1/login',  tasks.login);
 
-app.post('/api/v1/logout',  routeTasks.logout);
+app.post('/api/v1/logout',  tasks.logout);
 
-app.post('/api/v1/register', routeTasks.register);
+app.post('/api/v1/register', tasks.register);
 
 
 app.listen(port, () => {

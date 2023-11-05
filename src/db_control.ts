@@ -1,8 +1,8 @@
 import {Collection, Document, MongoClient, ServerApiVersion, WithId} from "mongodb";
-import {User} from "./User.js";
-import {Item} from "./Item.js";
-import {TypeItem} from "./types.js";
-import {db_connect_url} from "./constants.js";
+import { User } from "./User.js";
+import { Item} from "./Item.js";
+import { TypeItem } from "./types.js";
+import { db_connect_url } from "./config.js";
 
 const client: MongoClient = new MongoClient(db_connect_url, {
     serverApi: {
@@ -13,6 +13,11 @@ const client: MongoClient = new MongoClient(db_connect_url, {
 });
 const users: Collection = client.db().collection('users');
 
+/**
+ * Retrieves a user from the database by the specified login.
+ *
+ * @param login the user login as string
+ */
 export async function getUser(login: string): Promise<User | undefined> {
     try {
         await client.connect();
@@ -24,14 +29,18 @@ export async function getUser(login: string): Promise<User | undefined> {
                 items: user.items
             }
         }
-
     } finally {
         await client.close()
     }
     return undefined;
 }
 
-export async function getItems(login: string): Promise<TypeItem[]> {
+/**
+ * Gets the list of items for the user with the specified login from the database
+ *
+ * @param login the user login as string
+ */
+export async function getItems(login: string): Promise<Item[]> {
     try {
         await client.connect();
         const user: WithId<Document> | null = await users.findOne({ "login": login });
@@ -44,7 +53,13 @@ export async function getItems(login: string): Promise<TypeItem[]> {
     throw new Error("Can't find user in db")
 }
 
-export async function addItem(login: string, item: Item): Promise<void> {
+/**
+ * Adds a new element by user login to the database
+ *
+ * @param login the user login as string
+ * @param item the element that needs to be added
+ */
+export async function addItem(login: string, item: TypeItem): Promise<void> {
     try {
         await client.connect();
         await users.updateOne({"login" : login}, {$push: {"items": item}})
@@ -53,6 +68,14 @@ export async function addItem(login: string, item: Item): Promise<void> {
     }
 }
 
+/**
+ * Updates the data of the selected item
+ *
+ * @param login the user login as string
+ * @param id the identifier of the item to be updated
+ * @param text the new text for the item
+ * @param checked the new status for the item
+ */
 export async function editItem(login:string, id: number, text: string, checked: boolean): Promise<void> {
     try {
         await client.connect();
@@ -68,6 +91,12 @@ export async function editItem(login:string, id: number, text: string, checked: 
     }
 }
 
+/**
+ * Deletes the selected item
+ *
+ * @param login the user login as string
+ * @param id the identifier of the item to be deleted
+ */
 export async function deleteItem(login: string, id: number): Promise<void> {
     try {
         await client.connect();
@@ -76,10 +105,15 @@ export async function deleteItem(login: string, id: number): Promise<void> {
             { $pull: {"items": {"id": id} } }
         )
     } finally {
-
+        await client.close()
     }
 }
 
+/**
+ * Creates a new taper record in the database
+ *
+ * @param user the object with information about the user
+ */
 export async function createUser(user: User): Promise<void> {
     try {
         await client.connect()
