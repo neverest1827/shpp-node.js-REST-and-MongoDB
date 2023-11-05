@@ -3,7 +3,9 @@ import {retrieveItems, getId, getIndex} from "./functions.js";
 import {Item} from "./Item.js";
 import {TypeItem} from "./types.js";
 import {User} from "./User.js";
-import * as db from "./db_control.js";
+import * as file from "./file_control.js";
+import * as db from "./db_control.js"
+import {use_db} from "./constants.js";
 
 export async function getItems(req: Request, res: Response): Promise<void> {
     const items: Item[] = await retrieveItems(req, res);
@@ -17,7 +19,11 @@ export async function createItem(req: Request, res: Response): Promise<void> {
     const userID: string | undefined = req.session.login
     const newItem: Item = new Item(id, request.text, false)
     if(userID){
-        await db.addItem(userID, newItem)
+        if(use_db){
+            await db.addItem(userID, newItem);
+        } else {
+            await file.addItem(userID, newItem);
+        }
     } else {
         req.cookies.items.push(newItem)
         res.cookie("items", req.cookies.items)
@@ -34,7 +40,11 @@ export async function editItem(req: Request, res: Response): Promise<void> {
 
     if (targetIndex || targetIndex === 0) {
         if(userID){
-            await db.editItem(userID, targetIndex, request.text, request.checked)
+            if(use_db){
+                await db.editItem(userID, targetId, request.text, request.checked);
+            } else {
+                await file.editItem(userID, targetIndex, request.text, request.checked);
+            }
         } else {
             req.cookies.items[targetIndex].text = request.text;
             req.cookies.items[targetIndex].checked = request.checked;
@@ -55,7 +65,11 @@ export async function deleteItem(req: Request, res: Response): Promise<void> {
 
     if (startIndex || startIndex === 0) {
         if(userID){
-            await db.deleteItem(userID, startIndex)
+            if(use_db){
+                await db.deleteItem(userID, targetId);
+            } else {
+                await file.deleteItem(userID, startIndex);
+            }
         } else {
             req.cookies.items.splice(startIndex, 1)
             res.cookie("items", req.cookies.items)
@@ -69,7 +83,7 @@ export async function deleteItem(req: Request, res: Response): Promise<void> {
 export async function login(req: Request, res: Response): Promise<void> {
     const {login, pass} = req.body;
     const userID: string | undefined = req.session.login
-    const user: User | undefined = await db.getUser(login);
+    const user: User | undefined = (use_db) ? await db.getUser(login) : await file.getUser(login);
 
     if(userID || req.cookies?.items && !user){
         res.status(200).send({ "ok": true });
@@ -99,9 +113,13 @@ export async function logout(req: Request, res: Response): Promise<void> {
 export async function register(req: Request, res: Response): Promise<void> {
     const {login, pass} = req.body;
     const userID: string | undefined = req.session.login
-
-    if(!userID){
-        await db.createUser(new User(login, pass))
+    const user: User | undefined = (use_db) ? await db.getUser(login) : await file.getUser(login);
+    if(!user){
+        if (use_db){
+            await db.createUser(new User(login, pass));
+        } else {
+            await file.createUser(new User(login, pass));
+        }
         req.session.login = login
         res.status(200).send({ "ok": true })
     } else {

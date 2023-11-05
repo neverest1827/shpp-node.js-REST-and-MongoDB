@@ -1,7 +1,9 @@
 import {TypeItem} from "./types.js";
 import {Request, Response} from "express";
 import {Item} from "./Item.js";
+import * as file from "./file_control.js"
 import * as db from "./db_control.js"
+import {use_db} from "./constants.js";
 
 export function getIndex(items: Item[], targetId: number): number | undefined{
     for (let index: number = 0; index < items.length; index++) {
@@ -17,7 +19,11 @@ export async function retrieveItems(req: Request, res: Response): Promise<TypeIt
     let items: Item[];
     const userID: string | undefined = req.session.login
     if (userID) {
-        items = await db.getItems(userID);
+        if(use_db) {
+            items = await db.getItems(userID);
+        } else {
+            items = await file.getItems(userID);
+        }
     } else {
         if (!req.cookies?.items) {
             res.cookie("items", [])

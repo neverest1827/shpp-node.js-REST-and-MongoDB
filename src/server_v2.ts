@@ -7,6 +7,7 @@ import FileStore from "session-file-store"
 import { TypePort } from "./types.js";
 import {actions} from "./actions.js";
 import cookieParser from "cookie-parser";
+import cors from "cors"
 
 const port: TypePort = 3005
 const filename: string = fileURLToPath(import.meta.url);
@@ -22,6 +23,10 @@ declare module 'express-session' {
 
 app.use(cookieParser());
 app.use(bodyParser.json());
+app.use(cors({
+    origin: "http://localhost:63342",
+    credentials: true
+}));
 app.use(express.static(path.join(dirname, '../public')));
 app.use(session({
     store: new FileStoreSession({

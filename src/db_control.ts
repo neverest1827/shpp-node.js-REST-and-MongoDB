@@ -1,71 +1,90 @@
-import {TypeItem} from "./types.js";
-import * as fs from 'fs/promises'
+import {Collection, Document, MongoClient, ServerApiVersion, WithId} from "mongodb";
 import {User} from "./User.js";
-import {path} from "./constants.js";
 import {Item} from "./Item.js";
+import {TypeItem} from "./types.js";
+import {db_connect_url} from "./constants.js";
+
+const client: MongoClient = new MongoClient(db_connect_url, {
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
+});
+const users: Collection = client.db().collection('users');
 
 export async function getUser(login: string): Promise<User | undefined> {
-    const data: string = await fs.readFile(path, 'utf-8')
-    const db: { users: User[] } = JSON.parse(data)
-    const users: User[] = db.users
-    return users.find( (user: User): boolean => user.login === login )
+    try {
+        await client.connect();
+        const user: WithId<Document> | null = await users.findOne({ "login": login });
+        if (user){
+            return {
+                login: user.login,
+                pass: user.pass,
+                items: user.items
+            }
+        }
+
+    } finally {
+        await client.close()
+    }
+    return undefined;
 }
 
 export async function getItems(login: string): Promise<TypeItem[]> {
-    const user: User | undefined = await getUser(login)
-    if (user){
-        return user.items
-    } else {
-        throw new Error("Can't find user in file")
+    try {
+        await client.connect();
+        const user: WithId<Document> | null = await users.findOne({ "login": login });
+        if (user) {
+            return user.items;
+        }
+    } finally {
+        await client.close()
     }
+    throw new Error("Can't find user in db")
 }
 
 export async function addItem(login: string, item: Item): Promise<void> {
-    const data: string = await fs.readFile(path, 'utf-8')
-    const db: { users: User[] } = JSON.parse(data)
-    const users: User[] = db.users
-    const user: User | undefined = users.find( (user: User): boolean => user.login === login )
-
-    if (user) {
-        user.items.push(item)
-        await fs.writeFile(path, JSON.stringify(db, null, 2), { flag: 'w' });
-    } else {
-        throw new Error("Can't find user in file")
+    try {
+        await client.connect();
+        await users.updateOne({"login" : login}, {$push: {"items": item}})
+    } finally {
+        await client.close()
     }
 }
 
-export async function editItem(login:string, index: number, text: string, checked: boolean): Promise<void> {
-    const data: string = await fs.readFile(path, 'utf-8')
-    const db: { users: User[] } = JSON.parse(data)
-    const users: User[] = db.users
-    const user: User | undefined = users.find( (user: User): boolean => user.login === login )
-
-    if (user) {
-        user.items[index].text = text;
-        user.items[index].checked = checked;
-        await fs.writeFile(path, JSON.stringify(db, null, 2), { flag: 'w' });
-    } else {
-        throw new Error("Can't find user in file")
+export async function editItem(login:string, id: number, text: string, checked: boolean): Promise<void> {
+    try {
+        await client.connect();
+        await users.findOneAndUpdate(
+            {"login": login, "items.id": id},
+            {$set: {
+                "items.$.text": text,
+                "items.$.checked": checked
+            }}
+        )
+    } finally {
+        await client.close()
     }
 }
 
-export async function deleteItem(login: string, index: number): Promise<void> {
-    const data: string = await fs.readFile(path, 'utf-8')
-    const db: { users: User[] } = JSON.parse(data)
-    const users: User[] = db.users
-    const user: User | undefined = users.find( (user: User): boolean => user.login === login )
+export async function deleteItem(login: string, id: number): Promise<void> {
+    try {
+        await client.connect();
+        await users.updateOne(
+            {"login": login},
+            { $pull: {"items": {"id": id} } }
+        )
+    } finally {
 
-    if (user) {
-        user.items.splice(index, 1);
-        await fs.writeFile(path, JSON.stringify(db, null, 2), { flag: 'w' });
-    } else {
-        throw new Error("Can't find user in file")
     }
 }
 
 export async function createUser(user: User): Promise<void> {
-    const data: string = await fs.readFile(path, 'utf-8')
-    const db: { users: User[] } = JSON.parse(data)
-    db.users.push(user)
-    await fs.writeFile(path, JSON.stringify(db, null, 2), { flag: 'w' });
+    try {
+        await client.connect()
+        await users.insertOne(user);
+    } finally {
+        await client.close()
+    }
 }
