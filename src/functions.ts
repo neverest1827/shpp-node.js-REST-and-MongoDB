@@ -37,11 +37,11 @@ export async function retrieveItems(req: Request, res: Response): Promise<TypeIt
             items = await file.getItems(userID);
         }
     } else {
-        if (!req.cookies?.items) {
+        if (req.cookies.items) {
+            items = req.cookies.items
+        } else {
             res.cookie("items", [])
             items = [] // Since we will receive cookies only on the next request, I use the following "crutch"
-        } else {
-            items = req.cookies.items
         }
     }
 
